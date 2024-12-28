@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="container mt-5">
+  <h1 class="text-center mb-4">Shopping Dashboard</h1>
+
+  <!-- Navigation -->
+  <div class="d-flex justify-content-center mb-4">
+    <button class="btn btn-primary me-2" onclick="showSection('customerSection')">Customer Dashboard</button>
+    <button class="btn btn-success" onclick="showSection('adminSection')">Admin Dashboard</button>
+  </div>
+
+  <!-- Customer Section -->
+  <div id="customerSection" class="hidden">
+    <h3>Customer Dashboard</h3>
+    <div class="mb-4">
+      <button class="btn btn-primary me-2" onclick="fetchLowestPriceBrands()">카테고리별 최저가 조회</button>
+      <button class="btn btn-success me-2" onclick="fetchLowestPriceBrand()">단일 브랜드 최저가 조회</button>
+      <button class="btn btn-warning" onclick="fetchCategoryPriceRange()">카테고리별 최저/최고가 조회</button>
+    </div>
+    <div id="customerResults" class="border p-3">
+      결과가 여기에 표시됩니다.
+    </div>
+  </div>
+
+  <!-- Admin Section -->
+  <div id="adminSection" class="hidden">
+    <h3>Admin Dashboard</h3>
+
+    <!-- Brand Management -->
+    <div class="mb-4">
+      <h5>브랜드 관리</h5>
+      <label for="brandName" class="form-label">브랜드 이름</label>
+      <input type="text" id="brandName" class="form-control mb-2" placeholder="브랜드 이름 입력">
+      <button class="btn btn-primary me-2" onclick="addBrand()">브랜드 등록</button>
+      <button class="btn btn-warning me-2" onclick="updateBrand()">브랜드 수정</button>
+      <button class="btn btn-danger" onclick="deleteBrand()">브랜드 삭제</button>
+    </div>
+
+    <!-- Product Management -->
+    <div class="mb-4">
+      <h5>상품 관리</h5>
+      <label for="productName" class="form-label">상품 이름</label>
+      <input type="text" id="productName" class="form-control mb-2" placeholder="상품 이름 입력">
+      <label for="productPrice" class="form-label">상품 가격</label>
+      <input type="number" id="productPrice" class="form-control mb-2" placeholder="상품 가격 입력">
+      <label for="productBrandId" class="form-label">브랜드 ID</label>
+      <input type="number" id="productBrandId" class="form-control mb-2" placeholder="브랜드 ID 입력">
+      <label for="productCategoryId" class="form-label">카테고리 ID</label>
+      <input type="number" id="productCategoryId" class="form-control mb-2" placeholder="카테고리 ID 입력">
+      <button class="btn btn-primary me-2" onclick="addProduct()">상품 등록</button>
+      <button class="btn btn-warning me-2" onclick="updateProduct()">상품 수정</button>
+      <button class="btn btn-danger" onclick="deleteProduct()">상품 삭제</button>
+    </div>
+
+    <div id="adminResults" class="border p-3">
+      결과가 여기에 표시됩니다.
+    </div>
+  </div>
+</div>
+
+<script>
+  // Toggle between Customer and Admin sections
+  function showSection(sectionId) {
+      document.getElementById('customerSection').classList.add('hidden');
+      document.getElementById('adminSection').classList.add('hidden');
+      document.getElementById(sectionId).classList.remove('hidden');
+  }
+
+  // Customer Dashboard API calls
+  async function fetchLowestPriceBrands() {
+      try {
+          const response = await axios.get('/customer/category/lowest-price');
+          displayResult('customerResults', response.data);
+      } catch (error) {
+          alert('카테고리별 최저가 조회 중 오류가 발생했습니다.');
+      }
+  }
+
+  async function fetchLowestPriceBrand() {
+      try {
+          const response = await axios.get('/customer/brand/lowest-price');
+          displayResult('customerResults', response.data);
+      } catch (error) {
+          alert('단일 브랜드 최저가 조회 중 오류가 발생했습니다.');
+      }
+  }
+
+  async function fetchCategoryPriceRange() {
+      const category = prompt('조회할 카테고리를 입력하세요:');
+      if (!category) return;
+      try {
+          const response = await axios.get('/customer/category/lowest-highest', { params: { category } });
+          displayResult('customerResults', response.data);
+      } catch (error) {
+          alert('카테고리별 최저/최고가 조회 중 오류가 발생했습니다.');
+      }
+  }
+
+  // Admin Dashboard API calls
+  async function addBrand() {
+      const brandName = document.getElementById('brandName').value;
+      if (!brandName) {
+          alert('브랜드 이름을 입력하세요.');
+          return;
+      }
+      try {
+          const response = await axios.post('/admin/brand', { name: brandName });
+          displayResult('adminResults', response.data);
+          alert('브랜드가 등록되었습니다.');
+      } catch (error) {
+          alert('브랜드 등록 중 오류가 발생했습니다.');
+      }
+  }
+
+  async function updateBrand() {
+      const brandId = prompt('수정할 브랜드 ID를 입력하세요:');
+      const brandName = document.getElementById('brandName').value;
+      if (!brandId || !brandName) {
+          alert('브랜드 ID와 이름을 입력하세요.');
+          return;
+      }
+      try {
+          const response = await axios.put(`/admin/brand/${brandId}`, { name: brandName });
+          displayResult('adminResults', response.data);
+          alert('브랜드가 수정되었습니다.');
+      } catch (error) {
+          alert('브랜드 수정 중 오류가 발생했습니다.');
+      }
+  }
+
+  async function deleteBrand() {
+      const brandId = prompt('삭제할 브랜드 ID를 입력하세요:');
+      if (!brandId) {
+          alert('브랜드 ID를 입력하세요.');
+          return;
+      }
+      try {
+          const response = await axios.delete(`/admin/brand/${brandId}`);
+          displayResult('adminResults', response.data);
+          alert('브랜드가 삭제되었습니다.');
+      } catch (error) {
+          alert('브랜드 삭제 중 오류가 발생했습니다.');
+      }
+  }
+
+  async function addProduct() {
+      const name = document.getElementById('productName').value;
+      const price = document.getElementById('productPrice').value;
+      const brandId = document.getElementById('productBrandId').value;
+      const categoryId = document.getElementById('productCategoryId').value;
+
+      if (!name || !price || !brandId || !categoryId) {
+          alert('모든 필드를 입력하세요.');
+          return;
+      }
+      try {
+          const response = await axios.post('/admin/product', {
+              name,
+              price,
+              brandId,
+              categoryId,
+          });
+          displayResult('adminResults', response.data);
+          alert('상품이 등록되었습니다.');
+      } catch (error) {
+          alert('상품 등록 중 오류가 발생했습니다.');
+      }
+  }
+
+  async function updateProduct() {
+      const productId = prompt('수정할 상품 ID를 입력하세요:');
+      const name = document.getElementById('productName').value;
+      const price = document.getElementById('productPrice').value;
+      const brandId = document.getElementById('productBrandId').value;
+      const categoryId = document.getElementById('productCategoryId').value;
+
+      if (!productId || !name || !price || !brandId || !categoryId) {
+          alert('모든 필드를 입력하세요.');
+          return;
+      }
+      try {
+          const response = await axios.put(`/admin/product/${productId}`, {
+              name,
+              price,
+              brandId,
+              categoryId,
+          });
+          displayResult('adminResults', response.data);
+          alert('상품이 수정되었습니다.');
+      } catch (error) {
+          alert('상품 수정 중 오류가 발생했습니다.');
+      }
+  }
+
+  async function deleteProduct() {
+      const productId = prompt('삭제할 상품 ID를 입력하세요:');
+      if (!productId) {
+          alert('상품 ID를 입력하세요.');
+          return;
+      }
+      try {
+          const response = await axios.delete(`/admin/product/${productId}`);
+          displayResult('adminResults', response.data);
+          alert('상품이 삭제되었습니다.');
+      } catch (error) {
+          alert('상품 삭제 중 오류가 발생했습니다.');
+      }
+  }
+
+  // Display results in the appropriate section
+  function displayResult(resultId, data) {
+      const resultElement = document.getElementById(resultId);
+      resultElement.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  }
+</script>
+</body>
+</html>
